@@ -53,10 +53,14 @@
     <div class="form-group">
       <p>Total Amount: $<span id="totalAmountUSD">0</span> (~<span id="totalAmountXLM">0</span> XLM)</p>
     </div>
-
+    <div class="form-group">
+      <button id="createTrustlineButton">Create Trustline</button>
+    </div>
     <div class="form-group">
       <button id="buyButton">Buy</button>
     </div>
+
+    
   </div>
 
   <script>
@@ -210,13 +214,50 @@
       }
     }
 
+    async function createTrustline() {
+      const stockSelect = document.getElementById('stocks');
+      const selectedStock = stockSelect.options[stockSelect.selectedIndex].value;
+      const assetCode = `v${selectedStock}`;
+
+      try {
+        const account = await fetchAccount(publicKey);
+        const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+        const fee = await server.fetchBaseFee();
+
+        const asset = new StellarSdk.Asset(assetCode, 'GBFY5IBQHLIRZBJTNNZW7QTTHBK2EVU6PD2AP6AAUPRYPZ66RE3ATFIA'); // Issuer's public key
+        const transaction = new StellarSdk.TransactionBuilder(account, {
+          fee,
+          networkPassphrase: StellarSdk.Networks.TESTNET
+        })
+        .addOperation(StellarSdk.Operation.changeTrust({
+          asset: asset
+        }))
+        .setTimeout(180)
+        .build();
+
+        const transactionXDR = transaction.toXDR();
+        const signedXDR = await window.freighterApi.signTransaction(transactionXDR, { network: 'TESTNET' });
+
+        const result = await submitTransaction(signedXDR);
+
+        if (result.success) {
+          alert('Trustline created successfully!');
+        } else {
+          throw new Error('Trustline creation failed');
+        }
+      } catch (error) {
+        console.error('Error creating trustline:', error);
+        alert('Failed to create trustline');
+      }
+    }
+
     document.getElementById('exchanges').addEventListener('change', (e) => {
       loadStocks(e.target.value);
     });
 
     document.getElementById('calculateButton').addEventListener('click', calculateAmount);
-
     document.getElementById('buyButton').addEventListener('click', buyStock);
+    document.getElementById('createTrustlineButton').addEventListener('click', createTrustline);
 
     loadExchanges();
     fetchXlmPrice();

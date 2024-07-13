@@ -105,21 +105,7 @@ async function createToken(publicKey, stockSymbol, quantity) {
   const asset = new Asset(stockSymbol, issuerKeypair.publicKey());
 
   // Create a transaction to establish trustline
-  const trustTransaction = new TransactionBuilder(distributorAccount, {
-    fee: BASE_FEE,
-    networkPassphrase: Networks.TESTNET,
-  })
-  .addOperation(
-    Operation.changeTrust({
-      asset: asset,
-    })
-  )
-  .setTimeout(180)
-  .build();
 
-  trustTransaction.sign(distributorKeypair);
-  await server.submitTransaction(trustTransaction);
-  console.log("Trustline created successfully");
 
   // Create a transaction to issue the asset
   const issueTransaction = new TransactionBuilder(issuerAccount, {
@@ -128,7 +114,7 @@ async function createToken(publicKey, stockSymbol, quantity) {
   })
   .addOperation(
     Operation.payment({
-      destination: distributor.publicKey,
+      destination: publicKey,
       asset: asset,
       amount: quantity.toString(), // Issue quantity
     })
