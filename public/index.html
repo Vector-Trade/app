@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vector</title>
   <script src='https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/2.0.0/index.min.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/8.2.3/stellar-sdk.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -27,8 +28,8 @@
       <span id="walletStatus"></span>
       <div>
         <p>Public Key</p>
-      <p id="publicKey"></p>
-    </div>
+        <p id="publicKey"></p>
+      </div>
     </div>
     <div class="form-group">
       <label for="exchanges">Select Stock Exchange:</label>
@@ -50,7 +51,7 @@
     </div>
 
     <div class="form-group">
-      <p>Total Amount: <span id="totalAmount">0</span></p>
+      <p>Total Amount: $<span id="totalAmountUSD">0</span> (~<span id="totalAmountXLM">0</span> XLM)</p>
     </div>
 
     <div class="form-group">
@@ -60,13 +61,19 @@
 
   <script>
     let publicKey;
+    let xlmPrice;
+
+    async function fetchXlmPrice() {
+      const res = await fetch('/xlm-price');
+      const data = await res.json();
+      xlmPrice = data.xlmPrice;
+    }
 
     async function connectWallet() {
       try {
         publicKey = await window.freighterApi.requestAccess();
         console.log('Received publicKey:', publicKey);
 
-        // Send publicKey to backend
         const response = await fetch('/api/connect-wallet', {
           method: 'POST',
           headers: {
@@ -78,7 +85,6 @@
         const data = await response.json();
         console.log('Backend response:', data);
 
-        // Update UI or perform further actions
         document.getElementById('walletStatus').textContent = 'Connected';
         document.getElementById('publicKey').textContent = publicKey;
       } catch (error) {
@@ -104,9 +110,9 @@
     async function loadStocks(exchangeId) {
       const res = await fetch(`/stocks?exchange=${exchangeId}`);
       const stocks = await res.json();
-      console.log('Received stocks data:', stocks); // Log the received data
+      console.log('Received stocks data:', stocks);
       const stockSelect = document.getElementById('stocks');
-      stockSelect.innerHTML = ''; // Clear previous options
+      stockSelect.innerHTML = '';
       stocks.forEach(stock => {
         const option = document.createElement('option');
         option.value = stock.id;
@@ -120,30 +126,87 @@
       const selectedStock = stockSelect.options[stockSelect.selectedIndex];
       const price = selectedStock.textContent.split(' - $')[1];
       const quantity = document.getElementById('quantity').value;
-      const totalAmount = price * quantity;
-      document.getElementById('totalAmount').textContent = totalAmount;
+      const totalAmountUSD = price * quantity;
+      const totalAmountXLM = totalAmountUSD / xlmPrice;
+      document.getElementById('totalAmountUSD').textContent = totalAmountUSD.toFixed(2);
+      document.getElementById('totalAmountXLM').textContent = totalAmountXLM.toFixed(2);
     }
 
     async function buyStock() {
       const stockSelect = document.getElementById('stocks');
       const selectedStock = stockSelect.options[stockSelect.selectedIndex].value;
       const quantity = document.getElementById('quantity').value;
+      const totalAmountXLM = parseFloat(document.getElementById('totalAmountXLM').textContent);
 
       try {
-        const response = await fetch('/api/create-token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ publicKey, stockSymbol: selectedStock, quantity })
-        });
+        // Create the payment transaction XDR
+        const transactionXDR = await createTransactionXDR(totalAmountXLM);
 
-        const data = await response.json();
-        console.log('Token creation response:', data);
-        alert('Purchase successful!');
+        // Sign the transaction using Freighter
+        const signedXDR = await window.freighterApi.signTransaction(transactionXDR, { network: 'TESTNET' });
+
+        // Submit the signed transaction
+        const result = await submitTransaction(signedXDR);
+
+        if (result.success) {
+          // Proceed with token creation
+          const response = await fetch('/api/create-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ publicKey, stockSymbol: selectedStock, quantity })
+          });
+
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          const data = await response.json();
+          console.log('Token creation response:', data);
+          alert('Purchase successful!');
+        } else {
+          throw new Error('Transaction submission failed');
+        }
       } catch (error) {
-        console.error('Error creating token:', error);
+        console.error('Error processing payment or creating token:', error);
         alert('Failed to purchase stock');
+      }
+    }
+
+    async function createTransactionXDR(amount) {
+      const account = await fetchAccount(publicKey);
+      const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+      const fee = await server.fetchBaseFee();
+      const transaction = new StellarSdk.TransactionBuilder(account, {
+        fee,
+        networkPassphrase: StellarSdk.Networks.TESTNET
+      })
+      .addOperation(StellarSdk.Operation.payment({
+        destination: 'GC62NL47H2Y2276UI3ORCJIODQPFGKTFPTML4CJVCMO7X5JZ2KE7NXRQ', // Replace with your destination address
+        asset: StellarSdk.Asset.native(),
+        amount: amount.toString()
+      }))
+      .setTimeout(180)
+      .build();
+
+      return transaction.toXDR();
+    }
+
+    async function fetchAccount(publicKey) {
+      const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+      return await server.loadAccount(publicKey);
+    }
+
+    async function submitTransaction(signedXDR) {
+      const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+      const transaction = StellarSdk.TransactionBuilder.fromXDR(signedXDR, StellarSdk.Networks.TESTNET);
+      try {
+        const result = await server.submitTransaction(transaction);
+        return { success: true, result };
+      } catch (error) {
+        console.error('Error submitting transaction:', error);
+        return { success: false, error };
       }
     }
 
@@ -156,6 +219,7 @@
     document.getElementById('buyButton').addEventListener('click', buyStock);
 
     loadExchanges();
+    fetchXlmPrice();
   </script>
 </body>
 </html>

@@ -24,7 +24,6 @@ app.use(express.static('public'));
 const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
 const ISSUER_SECRET = issuer.secret;
 const DISTRIBUTOR_SECRET = distributor.secret;
-// const serverUrl = 'https://horizon-testnet.stellar.org';
 
 const exchanges = [
   { id: 'NYSE', name: 'New York Stock Exchange' },
@@ -38,7 +37,6 @@ app.get('/exchanges', (req, res) => {
 app.post('/api/connect-wallet', (req, res) => {
   const { publicKey } = req.body;
   console.log('Received publicKey:', publicKey);
-  // Perform backend operations with publicKey (e.g., store in database)
   res.json({ message: 'Received publicKey successfully' });
 });
 
@@ -103,6 +101,7 @@ async function createToken(publicKey, stockSymbol, quantity) {
   const issuerAccount = await server.loadAccount(issuerKeypair.publicKey());
   const distributorAccount = await server.loadAccount(distributorKeypair.publicKey());
 
+
   const asset = new Asset(stockSymbol, issuerKeypair.publicKey());
 
   // Create a transaction to establish trustline
@@ -129,7 +128,7 @@ async function createToken(publicKey, stockSymbol, quantity) {
   })
   .addOperation(
     Operation.payment({
-      destination: publicKey,
+      destination: distributor.publicKey,
       asset: asset,
       amount: quantity.toString(), // Issue quantity
     })
@@ -147,7 +146,7 @@ async function createToken(publicKey, stockSymbol, quantity) {
 
 app.post('/api/create-token', async (req, res) => {
   const { publicKey, stockSymbol, quantity } = req.body;
-  let symbol = "v"+stockSymbol;
+  let symbol = "v" + stockSymbol;
 
   try {
     const result = await createToken(publicKey, symbol, quantity);
@@ -155,6 +154,22 @@ app.post('/api/create-token', async (req, res) => {
   } catch (error) {
     console.error('Error creating token:', error);
     res.status(500).json({ error: 'Failed to create token' });
+  }
+});
+
+app.get('/xlm-price', async (req, res) => {
+  try {
+    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+      params: {
+        ids: 'stellar',
+        vs_currencies: 'usd'
+      }
+    });
+    const xlmPrice = response.data.stellar.usd;
+    res.json({ xlmPrice });
+  } catch (error) {
+    console.error('Error fetching XLM price:', error);
+    res.status(500).json({ error: 'Failed to fetch XLM price' });
   }
 });
 
