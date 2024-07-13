@@ -59,36 +59,35 @@
   </div>
 
   <script>
+    let publicKey;
 
-  
+    async function connectWallet() {
+      try {
+        publicKey = await window.freighterApi.requestAccess();
+        console.log('Received publicKey:', publicKey);
 
-async function connectWallet() {
-    try {
-      const publicKey = await window.freighterApi.requestAccess();
-      console.log('Received publicKey:', publicKey);
+        // Send publicKey to backend
+        const response = await fetch('/api/connect-wallet', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ publicKey })
+        });
 
-      // Send publicKey to backend
-      const response = await fetch('/api/connect-wallet', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ publicKey })
-      });
+        const data = await response.json();
+        console.log('Backend response:', data);
 
-      const data = await response.json();
-      console.log('Backend response:', data);
-
-      // Update UI or perform further actions
-      document.getElementById('walletStatus').textContent = 'Connected';
-      document.getElementById('publicKey').textContent = publicKey;
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      alert('Failed to connect wallet');
+        // Update UI or perform further actions
+        document.getElementById('walletStatus').textContent = 'Connected';
+        document.getElementById('publicKey').textContent = publicKey;
+      } catch (error) {
+        console.error('Failed to connect wallet:', error);
+        alert('Failed to connect wallet');
+      }
     }
-  }
 
-  document.getElementById('connectWalletButton').addEventListener('click', connectWallet);
+    document.getElementById('connectWalletButton').addEventListener('click', connectWallet);
 
     async function loadExchanges() {
       const res = await fetch('/exchanges');
@@ -125,15 +124,36 @@ async function connectWallet() {
       document.getElementById('totalAmount').textContent = totalAmount;
     }
 
+    async function buyStock() {
+      const stockSelect = document.getElementById('stocks');
+      const selectedStock = stockSelect.options[stockSelect.selectedIndex].value;
+      const quantity = document.getElementById('quantity').value;
+
+      try {
+        const response = await fetch('/api/create-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ publicKey, stockSymbol: selectedStock, quantity })
+        });
+
+        const data = await response.json();
+        console.log('Token creation response:', data);
+        alert('Purchase successful!');
+      } catch (error) {
+        console.error('Error creating token:', error);
+        alert('Failed to purchase stock');
+      }
+    }
+
     document.getElementById('exchanges').addEventListener('change', (e) => {
       loadStocks(e.target.value);
     });
 
     document.getElementById('calculateButton').addEventListener('click', calculateAmount);
 
-    document.getElementById('buyButton').addEventListener('click', () => {
-      alert('Purchase successful!');
-    });
+    document.getElementById('buyButton').addEventListener('click', buyStock);
 
     loadExchanges();
   </script>
