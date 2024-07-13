@@ -8,65 +8,62 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/8.2.3/stellar-sdk.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
   <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    .form-group {
-      margin-bottom: 15px;
-    }
-  </style>
 </head>
-<body>
-  
+<body class=" font-sans">
+
+  <!-- Header Section -->
   <div class="bg-black text-white flex items-center p-6">
     <!-- Placeholder div for centering -->
     <div class="flex-1"></div>
   
     <!-- Text and Icon on the Left -->
     <div class="flex absolute left-4 items-center">
-      <i class="fas fa-vector-square text-4xl mr-6 ml-6 "></i> <!-- Example icon from Font Awesome -->
+      <i class="fas fa-vector-square text-4xl mr-6 ml-6"></i> <!-- Example icon from Font Awesome -->
       <h1 class="text-4xl font-bold">Vector</h1>
     </div>
   
     <!-- Links in Center -->
     <div class="flex-1 text-center">
-      <a href="/" class="mx-2 text-2xl font-bold hover:underline"">Home</a>
-      <a href="./buy.html" class="mx-10 text-2xl font-bold hover:underline"">Buy</a>
+      <a href="/" class="mx-2 text-2xl font-bold hover:underline">Home</a>
+      <a href="./buy.html" class="mx-10 text-2xl font-bold hover:underline">Buy</a>
       <a href="./portfolio.html" class="mx-2 text-2xl font-bold hover:underline">Portfolio</a>
     </div>
   
     <!-- Two Buttons on the Right -->
     <div class="flex-1 text-right mr-6">
-      <button class="bg-white hover:bg-black border border-white hover:text-white text-black b font-bold py-2 px-4 rounded mr-2">Buy Vectors</button>
-      <button id="connectWalletButton" class="bg-white hover:bg-black border border-white text-black hover:text-white font-bold py-2 px-4 rounded ">Connect Wallet</button>
+      <button class="bg-white hover:bg-black border border-white hover:text-white text-black font-bold py-2 px-4 rounded mr-2">Buy Vectors</button>
+      <button id="connectWalletButton" class="bg-white hover:bg-black border border-white text-black hover:text-white font-bold py-2 px-4 rounded">Connect Wallet</button>
     </div>
   </div>
 
-    <div class="form-group">
-      <span id="walletStatus"></span>
+  <!-- Main Content -->
+  <div class="container mx-auto p-6">
+    <div class="form-group mb-6">
+      <span id="walletStatus" class="block text-xl"></span>
       <div>
-        <p id="publicKey"></p>
+        <p id="publicKey" class="text-lg"></p>
       </div>
     </div>
-    
+
+    <div class="form-group mb-6">
+      <h2 class="text-2xl font-bold mb-4">Assets</h2>
+      <table id="assetsTable" class="table-auto w-full text-left">
+        <thead>
+          <tr>
+            <th class="px-4 py-2 border-b">Asset</th>
+            <th class="px-4 py-2 border-b">Balance</th>
+          </tr>
+        </thead>
+        <tbody id="assetsBody">
+          <!-- Assets will be displayed here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <script>
     let publicKey;
-    let xlmPrice;
-
-    async function fetchXlmPrice() {
-      const res = await fetch('/xlm-price');
-      const data = await res.json();
-      xlmPrice = data.xlmPrice;
-    }
 
     async function connectWallet() {
       try {
@@ -86,21 +83,57 @@
 
         document.getElementById('walletStatus').textContent = 'Connected';
         document.getElementById('publicKey').textContent = publicKey;
+        fetchAndDisplayAssets();
       } catch (error) {
         console.error('Failed to connect wallet:', error);
         alert('Failed to connect wallet');
       }
     }
 
+    async function fetchAndDisplayAssets() {
+      try {
+        const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+        const account = await server.loadAccount(publicKey);
+        const balances = account.balances;
+
+        const assetsBody = document.getElementById('assetsBody');
+        assetsBody.innerHTML = '';
+
+        balances.forEach(balance => {
+              // Check if the asset_code starts with 'v' (case-insensitive)
+              if (balance.asset_code && balance.asset_code.toLowerCase().startsWith('v')) {
+                  const row = document.createElement('tr');
+                  const assetCell = document.createElement('td');
+                  const balanceCell = document.createElement('td');
+
+                  if (balance.asset_type === 'native') {
+                      assetCell.textContent = 'XLM';
+                  } else {
+                      assetCell.textContent = `${balance.asset_code} (${balance.asset_issuer.slice(0, 6)}...)`;
+                  }
+
+                  // Use Math.floor() to round down the balance to the nearest whole number
+                  balanceCell.textContent = Math.floor(balance.balance).toString();
+                  row.appendChild(assetCell);
+                  row.appendChild(balanceCell);
+                  assetsBody.appendChild(row);
+              }
+          });
+      } catch (error) {
+        console.error('Error fetching assets:', error);
+        alert('Failed to fetch assets');
+      }
+    }
+
     document.getElementById('connectWalletButton').addEventListener('click', connectWallet);
 
     document.addEventListener('DOMContentLoaded', function() {
-    const connectWalletButton = document.getElementById('connectWalletButton');
+      const connectWalletButton = document.getElementById('connectWalletButton');
 
-    connectWalletButton.addEventListener('click', function() {
-      connectWalletButton.textContent = 'Connected'; 
+      connectWalletButton.addEventListener('click', function() {
+        connectWalletButton.textContent = 'Connected'; 
+      });
     });
-  });
   </script>
 </body>
 </html>

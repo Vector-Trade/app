@@ -1,0 +1,196 @@
+.image-20-icon {
+  position: absolute;
+  top: -177px;
+  left: 0;
+  width: 1857px;
+  height: 1039px;
+  object-fit: cover;
+}
+.select-stock-exchange {
+  position: relative;
+  font-weight: 500;
+}
+.frame-child,
+.frame-inner,
+.frame-item {
+  height: 38px;
+  position: relative;
+  border-radius: var(--br-9xs);
+  background-color: var(--color-gray-200);
+  border: 1px solid var(--color-white);
+  box-sizing: border-box;
+  display: none;
+}
+.frame-child,
+.frame-item {
+  align-self: stretch;
+}
+.frame-inner {
+  width: 191px;
+}
+.enter-quantity,
+.select-stock,
+.total-amount,
+.xlm {
+  position: relative;
+  font-weight: 500;
+  display: inline-block;
+  min-width: 103px;
+}
+.enter-quantity,
+.total-amount,
+.xlm {
+  min-width: 118px;
+}
+.total-amount,
+.xlm {
+  min-width: 109px;
+}
+.xlm {
+  min-width: 91px;
+}
+.total-amount-parent,
+.xlm-wrapper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.xlm-wrapper {
+  align-self: stretch;
+  border-radius: var(--br-9xs);
+  background-color: var(--color-gray-200);
+  border: 1px solid var(--color-white);
+  flex-direction: row;
+  padding: 6px 41px 7px;
+  white-space: nowrap;
+  color: #939393;
+}
+.total-amount-parent {
+  width: 191px;
+  flex-direction: column;
+  gap: 6px;
+}
+.quantity-input {
+  align-self: stretch;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.create-trustline {
+  position: relative;
+  font-size: var(--font-size-mid);
+  font-weight: 600;
+  font-family: var(--font-inter);
+  color: var(--color-white);
+  text-align: left;
+}
+.action-button-labels {
+  cursor: pointer;
+  border: 1px solid var(--color-dimgray);
+  padding: var(--padding-sm) var(--padding-xl) var(--padding-sm)
+    var(--padding-2xl);
+  background-color: #000aff;
+  align-self: stretch;
+  border-radius: var(--br-9xs);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  white-space: nowrap;
+}
+.action-button-labels1:hover,
+.action-button-labels:hover {
+  background-color: #333dff;
+  border: 1px solid var(--color-gray-100);
+  box-sizing: border-box;
+}
+.buy-stocks {
+  position: relative;
+  font-size: var(--font-size-mid);
+  font-weight: 600;
+  font-family: var(--font-inter);
+  color: var(--color-black);
+  text-align: left;
+  display: inline-block;
+  min-width: 93px;
+}
+.action-button-labels1,
+.action-buttons {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-start;
+}
+.action-button-labels1 {
+  cursor: pointer;
+  border: 1px solid var(--color-dimgray);
+  padding: var(--padding-sm) var(--padding-xl) var(--padding-sm)
+    var(--padding-2xl);
+  background-color: #00ff1a;
+  border-radius: var(--br-9xs);
+  flex-direction: row;
+  justify-content: center;
+  white-space: nowrap;
+}
+.action-button-labels1:hover {
+  background-color: #00e600;
+}
+.action-buttons {
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.quantity-input-parent {
+  align-self: stretch;
+  gap: 26px;
+}
+.quantity-input-parent,
+.select-stock-exchange-parent,
+.stock-selection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+.stock-selection {
+  align-self: stretch;
+  gap: 59px;
+}
+.select-stock-exchange-parent {
+  position: absolute;
+  top: 238px;
+  left: 476px;
+  border-radius: 13px;
+  background-color: rgba(255, 255, 255, 0.24);
+  border: 1px solid #281b57;
+  box-sizing: border-box;
+  width: 487px;
+  overflow: hidden;
+  padding: 36px 42px 77px 43px;
+  gap: 72px;
+  max-width: 100%;
+  z-index: 1;
+}
+.desktop-10 {
+  width: 100%;
+  height: 862px;
+  position: relative;
+  background-color: var(--color-black);
+  overflow: hidden;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: left;
+  font-size: var(--font-size-mid);
+  color: var(--color-white);
+  font-family: var(--font-inter);
+}
+@media screen and (max-width: 414px) {
+  .quantity-input {
+    flex-wrap: wrap;
+  }
+  .desktop-10 {
+    height: auto;
+    min-height: 862;
+  }
+}
