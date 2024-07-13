@@ -33,7 +33,7 @@
     <!-- Text and Icon on the Left -->
     <div class="flex absolute left-4 items-center">
       <i class="fas fa-vector-square text-4xl mr-6 ml-6 "></i> <!-- Example icon from Font Awesome -->
-      <a href="/"><h1 class="text-4xl font-bold">Vector</h1></a>
+      <h1 class="text-4xl font-bold">Vector</h1>
     </div>
   
     <!-- Links in Center -->
@@ -45,10 +45,62 @@
   
     <!-- Two Buttons on the Right -->
     <div class="flex-1 text-right mr-6">
-      <a href="./buy.html"><button class="bg-white hover:bg-black border border-white hover:text-white text-black b font-bold py-2 px-4 rounded mr-2">Buy Vectors</button></a>
+      <button class="bg-white hover:bg-black border border-white hover:text-white text-black b font-bold py-2 px-4 rounded mr-2">Buy Vectors</button>
       <button id="connectWalletButton" class="bg-white hover:bg-black border border-white text-black hover:text-white font-bold py-2 px-4 rounded ">Connect Wallet</button>
     </div>
   </div>
 
+    <div class="form-group">
+      <span id="walletStatus"></span>
+      <div>
+        <p id="publicKey"></p>
+      </div>
+    </div>
+    
+
+  <script>
+    let publicKey;
+    let xlmPrice;
+
+    async function fetchXlmPrice() {
+      const res = await fetch('/xlm-price');
+      const data = await res.json();
+      xlmPrice = data.xlmPrice;
+    }
+
+    async function connectWallet() {
+      try {
+        publicKey = await window.freighterApi.requestAccess();
+        console.log('Received publicKey:', publicKey);
+
+        const response = await fetch('/api/connect-wallet', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ publicKey })
+        });
+
+        const data = await response.json();
+        console.log('Backend response:', data);
+
+        document.getElementById('walletStatus').textContent = 'Connected';
+        document.getElementById('publicKey').textContent = publicKey;
+      } catch (error) {
+        console.error('Failed to connect wallet:', error);
+        alert('Failed to connect wallet');
+      }
+    }
+
+    document.getElementById('connectWalletButton').addEventListener('click', connectWallet);
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const connectWalletButton = document.getElementById('connectWalletButton');
+
+    connectWalletButton.addEventListener('click', function() {
+      connectWalletButton.textContent = 'Connected'; 
+    });
+  });
+  </script>
 </body>
 </html>

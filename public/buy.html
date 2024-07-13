@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vector</title>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/2.0.0/index.min.js'></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/8.2.3/stellar-sdk.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="bg-black text-white flex items-center p-6">
+    <!-- Placeholder div for centering -->
+    <div class="flex-1"></div>
+  
+    <!-- Text and Icon on the Left -->
+    <div class="flex absolute left-4 items-center">
+      <i class="fas fa-vector-square text-4xl mr-6 ml-6 "></i> <!-- Example icon from Font Awesome -->
+      <h1 class="text-4xl font-bold">Vector</h1>
+    </div>
+  
+    <!-- Links in Center -->
+    <div class="flex-1 text-center">
+      <a href="/" class="mx-2 text-2xl font-bold hover:underline"">Home</a>
+      <a href="./buy.html" class="mx-10 text-2xl font-bold hover:underline"">Buy</a>
+      <a href="./portfolio.html" class="mx-2 text-2xl font-bold hover:underline">Portfolio</a>
+    </div>
+  
+    <!-- Two Buttons on the Right -->
+    <div class="flex-1 text-right mr-6">
+      <button class="bg-white hover:bg-black border border-white hover:text-white text-black b font-bold py-2 px-4 rounded mr-2">Buy Vectors</button>
+      <button id="connectWalletButton" class="bg-white hover:bg-black border border-white text-black hover:text-white font-bold py-2 px-4 rounded ">Connect Wallet</button>
+    </div>
+  </div>
+
+    <div class="form-group">
+      <span id="walletStatus"></span>
+      <div>
+        <p id="publicKey"></p>
+      </div>
+    </div>
+    <div class="flex justify-center items-center h-screen">
+        <form class="w-full max-w-lg bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+          <div class="mb-4">
+            <label for="exchanges" class="block text-gray-700 text-sm font-bold mb-2">Select Stock Exchange:</label>
+            <select id="exchanges" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></select>
+          </div>
+      
+          <div class="mb-4">
+            <label for="stocks" class="block text-gray-700 text-sm font-bold mb-2">Select Stock:</label>
+            <select id="stocks" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></select>
+          </div>
+      
+          <div class="mb-4">
+            <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Enter Quantity:</label>
+            <input type="number" id="quantity" min="1" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline">
+          </div>
+      
+          <div class="mb-4">
+            <button id="calculateButton" class="bg-black hover:bg-gray-900 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Calculate Amount</button>
+          </div>
+      
+          <div class="mb-4">
+            <p>Total Amount: $<span id="totalAmountUSD">0</span> (~<span id="totalAmountXLM">0</span> XLM)</p>
+          </div>
+          <div class="mb-4">
+            <button id="createTrustlineButton" class="bg-black hover:bg-gray-900 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Create Trustline</button>
+          </div>
+          <div class="mb-4">
+            <button id="buyButton" class="bg-black hover:bg-gray-900 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Buy</button>
+          </div>
+        </form>
+      </div>
+    
+
+  <script>
+    let publicKey;
+    let xlmPrice;
+
+    async function fetchXlmPrice() {
+      const res = await fetch('/xlm-price');
+      const data = await res.json();
+      xlmPrice = data.xlmPrice;
+    }
+
+    async function connectWallet() {
+      try {
+        publicKey = await window.freighterApi.requestAccess();
+        console.log('Received publicKey:', publicKey);
+
+        const response = await fetch('/api/connect-wallet', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ publicKey })
+        });
+
+        const data = await response.json();
+        console.log('Backend response:', data);
+
+        document.getElementById('walletStatus').textContent = 'Connected';
+        document.getElementById('publicKey').textContent = publicKey;
+      } catch (error) {
+        console.error('Failed to connect wallet:', error);
+        alert('Failed to connect wallet');
+      }
+    }
+
+    document.getElementById('connectWalletButton').addEventListener('click', connectWallet);
+
+    async function loadExchanges() {
+      const res = await fetch('/exchanges');
+      const exchanges = await res.json();
+      const exchangeSelect = document.getElementById('exchanges');
+      exchanges.forEach(exchange => {
+        const option = document.createElement('option');
+        option.value = exchange.id;
+        option.textContent = exchange.name;
+        exchangeSelect.appendChild(option);
+      });
+    }
+
+    async function loadStocks(exchangeId) {
+      const res = await fetch(`/stocks?exchange=${exchangeId}`);
+      const stocks = await res.json();
+      console.log('Received stocks data:', stocks);
+      const stockSelect = document.getElementById('stocks');
+      stockSelect.innerHTML = '';
+      stocks.forEach(stock => {
+        const option = document.createElement('option');
+        option.value = stock.id;
+        option.textContent = `${stock.name} - $${stock.price}`;
+        stockSelect.appendChild(option);
+      });
+    }
+
+    function calculateAmount() {
+      const stockSelect = document.getElementById('stocks');
+      const selectedStock = stockSelect.options[stockSelect.selectedIndex];
+      const price = selectedStock.textContent.split(' - $')[1];
+      const quantity = document.getElementById('quantity').value;
+      const totalAmountUSD = price * quantity;
+      const totalAmountXLM = totalAmountUSD / xlmPrice;
+      document.getElementById('totalAmountUSD').textContent = totalAmountUSD.toFixed(2);
+      document.getElementById('totalAmountXLM').textContent = totalAmountXLM.toFixed(2);
+    }
+
+    async function buyStock() {
+      const stockSelect = document.getElementById('stocks');
+      const selectedStock = stockSelect.options[stockSelect.selectedIndex].value;
+      const quantity = document.getElementById('quantity').value;
+      const totalAmountXLM = parseFloat(document.getElementById('totalAmountXLM').textContent);
+
+      try {
+        const transactionXDR = await createTransactionXDR(totalAmountXLM);
+        const signedXDR = await window.freighterApi.signTransaction(transactionXDR, { network: 'TESTNET' });
+        const result = await submitTransaction(signedXDR);
+
+        if (result.success) {
+          const response = await fetch('/api/create-token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ publicKey, stockSymbol: selectedStock, quantity })
+          });
+
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+
+          const data = await response.json();
+          console.log('Token creation response:', data);
+          alert('Purchase successful!');
+        } else {
+          throw new Error('Transaction submission failed');
+        }
+      } catch (error) {
+        console.error('Error processing payment or creating token:', error);
+        alert('Failed to purchase stock');
+      }
+    }
+
+    async function createTransactionXDR(amount) {
+      const account = await fetchAccount(publicKey);
+      const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+      const fee = await server.fetchBaseFee();
+      const transaction = new StellarSdk.TransactionBuilder(account, {
+        fee,
+        networkPassphrase: StellarSdk.Networks.TESTNET
+      })
+      .addOperation(StellarSdk.Operation.payment({
+        destination: 'GC62NL47H2Y2276UI3ORCJIODQPFGKTFPTML4CJVCMO7X5JZ2KE7NXRQ', 
+        asset: StellarSdk.Asset.native(),
+        amount: amount.toString()
+      }))
+      .setTimeout(180)
+      .build();
+
+      return transaction.toXDR();
+    }
+
+    async function fetchAccount(publicKey) {
+      const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+      return await server.loadAccount(publicKey);
+    }
+
+    async function submitTransaction(signedXDR) {
+      const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+      const transaction = StellarSdk.TransactionBuilder.fromXDR(signedXDR, StellarSdk.Networks.TESTNET);
+      try {
+        const result = await server.submitTransaction(transaction);
+        return { success: true, result };
+      } catch (error) {
+        console.error('Error submitting transaction:', error);
+        return { success: false, error };
+      }
+    }
+
+    async function createTrustline() {
+      const stockSelect = document.getElementById('stocks');
+      const selectedStock = stockSelect.options[stockSelect.selectedIndex].value;
+      const assetCode = `v${selectedStock}`;
+
+      try {
+        const account = await fetchAccount(publicKey);
+        const server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+        const fee = await server.fetchBaseFee();
+
+        const asset = new StellarSdk.Asset(assetCode, 'GBFY5IBQHLIRZBJTNNZW7QTTHBK2EVU6PD2AP6AAUPRYPZ66RE3ATFIA'); 
+        const transaction = new StellarSdk.TransactionBuilder(account, {
+          fee,
+          networkPassphrase: StellarSdk.Networks.TESTNET
+        })
+        .addOperation(StellarSdk.Operation.changeTrust({
+          asset: asset
+        }))
+        .setTimeout(180)
+        .build();
+
+        const transactionXDR = transaction.toXDR();
+        const signedXDR = await window.freighterApi.signTransaction(transactionXDR, { network: 'TESTNET' });
+
+        const result = await submitTransaction(signedXDR);
+
+        if (result.success) {
+          alert('Trustline created successfully!');
+        } else {
+          throw new Error('Trustline creation failed');
+        }
+      } catch (error) {
+        console.error('Error creating trustline:', error);
+        alert('Failed to create trustline');
+      }
+    }
+
+    document.getElementById('exchanges').addEventListener('change', (e) => {
+      loadStocks(e.target.value);
+    });
+
+    document.getElementById('calculateButton').addEventListener('click', calculateAmount);
+    document.getElementById('buyButton').addEventListener('click', buyStock);
+    document.getElementById('createTrustlineButton').addEventListener('click', createTrustline);
+
+    loadExchanges();
+    fetchXlmPrice();
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const connectWalletButton = document.getElementById('connectWalletButton');
+
+    connectWalletButton.addEventListener('click', function() {
+      connectWalletButton.textContent = 'Connected'; 
+    });
+  });
+  </script>
+</body>
+</html>
