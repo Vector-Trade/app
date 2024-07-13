@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vector</title>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/stellar-freighter-api/2.0.0/index.min.js'></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Vector</h1>
+    <div class="form-group">
+      <button id="connectWalletButton">Connect Wallet</button>
+      <span id="walletStatus"></span>
+      <div>
+        <p>Public Key</p>
+      <p id="publicKey"></p>
+    </div>
+    </div>
+    <div class="form-group">
+      <label for="exchanges">Select Stock Exchange:</label>
+      <select id="exchanges"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="stocks">Select Stock:</label>
+      <select id="stocks"></select>
+    </div>
+
+    <div class="form-group">
+      <label for="quantity">Enter Quantity:</label>
+      <input type="number" id="quantity" min="1">
+    </div>
+
+    <div class="form-group">
+      <button id="calculateButton">Calculate Amount</button>
+    </div>
+
+    <div class="form-group">
+      <p>Total Amount: <span id="totalAmount">0</span></p>
+    </div>
+
+    <div class="form-group">
+      <button id="buyButton">Buy</button>
+    </div>
+  </div>
+
+  <script>
+
+  
+
+async function connectWallet() {
+    try {
+      const publicKey = await window.freighterApi.requestAccess();
+      console.log('Received publicKey:', publicKey);
+
+      // Send publicKey to backend
+      const response = await fetch('/api/connect-wallet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ publicKey })
+      });
+
+      const data = await response.json();
+      console.log('Backend response:', data);
+
+      // Update UI or perform further actions
+      document.getElementById('walletStatus').textContent = 'Connected';
+      document.getElementById('publicKey').textContent = publicKey;
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+      alert('Failed to connect wallet');
+    }
+  }
+
+  document.getElementById('connectWalletButton').addEventListener('click', connectWallet);
+
+    async function loadExchanges() {
+      const res = await fetch('/exchanges');
+      const exchanges = await res.json();
+      const exchangeSelect = document.getElementById('exchanges');
+      exchanges.forEach(exchange => {
+        const option = document.createElement('option');
+        option.value = exchange.id;
+        option.textContent = exchange.name;
+        exchangeSelect.appendChild(option);
+      });
+    }
+
+    async function loadStocks(exchangeId) {
+      const res = await fetch(`/stocks?exchange=${exchangeId}`);
+      const stocks = await res.json();
+      console.log('Received stocks data:', stocks); // Log the received data
+      const stockSelect = document.getElementById('stocks');
+      stockSelect.innerHTML = ''; // Clear previous options
+      stocks.forEach(stock => {
+        const option = document.createElement('option');
+        option.value = stock.id;
+        option.textContent = `${stock.name} - $${stock.price}`;
+        stockSelect.appendChild(option);
+      });
+    }
+
+    function calculateAmount() {
+      const stockSelect = document.getElementById('stocks');
+      const selectedStock = stockSelect.options[stockSelect.selectedIndex];
+      const price = selectedStock.textContent.split(' - $')[1];
+      const quantity = document.getElementById('quantity').value;
+      const totalAmount = price * quantity;
+      document.getElementById('totalAmount').textContent = totalAmount;
+    }
+
+    document.getElementById('exchanges').addEventListener('change', (e) => {
+      loadStocks(e.target.value);
+    });
+
+    document.getElementById('calculateButton').addEventListener('click', calculateAmount);
+
+    document.getElementById('buyButton').addEventListener('click', () => {
+      alert('Purchase successful!');
+    });
+
+    loadExchanges();
+  </script>
+</body>
+</html>

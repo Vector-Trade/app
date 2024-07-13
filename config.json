@@ -1,0 +1,15 @@
+{
+    "accounts": {
+      "issuer": {
+        "name": "Issuer",
+        "publicKey": "GBFY5IBQHLIRZBJTNNZW7QTTHBK2EVU6PD2AP6AAUPRYPZ66RE3ATFIA",
+        "secret": "SAZ6OH7K5HZVF5SQCNNNIH6TEU2AGVG2L2ZTBL64FOSRF6IT5NFEULWQ"
+      },
+      "distributor": {
+        "name": "Distributor",
+        "publicKey": "GCVKXNUREKAQS2EWGPMKA3FW6ZUOYBS7WYSJG73SGWHTH5P5AHIHI3DL",
+        "secret": "SCFFAZKLWQMEVGZKXDLRI3V2YNVSCWKVHTDTFKKA3HY7JUGVOFGJBUQK"
+      }
+    },
+    "serverUrl": "https://horizon-testnet.stellar.org"
+  }
